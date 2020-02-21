@@ -1,0 +1,23 @@
+[package]
+name = "vulkayes-window"
+version = "0.1.0"
+authors = ["edward"]
+edition = "2018"
+
+[features]
+default = ["winit_window"]
+
+winit_window = ["winit", "winapi", "metal", "cocoa", "objc"]
+
+[dependencies]
+vulkayes-core = { path = "../vulkayes-core" }
+
+winit = { version = "0.21", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["windef", "winuser"], optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+metal = { version = "0.17", optional = true }
+cocoa = { version = "0.20", optional = true }
+objc = { version = "0.2", optional = true }
