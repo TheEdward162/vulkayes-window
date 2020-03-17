@@ -90,7 +90,7 @@ pub fn create_surface(
 		Ok(vulkayes_core::surface::Surface::from_existing(
 			instance,
 			surface,
-			allocation_callbacks
+			host_memory_allocator
 		))
 	}
 }
