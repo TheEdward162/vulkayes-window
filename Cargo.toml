@@ -7,7 +7,9 @@ edition = "2018"
 [features]
 default = ["winit_window"]
 
-winit_window = ["winit", "winapi", "metal", "cocoa"]
+unix_use_xcb_default = []
+
+winit_window = ["winit", "winapi"]
 
 [dependencies]
 vulkayes-core = { path = "../vulkayes-core" }
@@ -18,5 +20,5 @@ winit = { version = "0.22", optional = true }
 winapi = { version = "0.3", features = ["windef", "winuser"], optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-metal = { version = "0.18", optional = true }
-cocoa = { version = "0.20", optional = true }
+metal = { version = "0.18" }
+cocoa = { version = "0.20" }
