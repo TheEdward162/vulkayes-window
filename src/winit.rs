@@ -1,7 +1,6 @@
-use std::{ffi::c_void, ops::Deref};
+use std::ops::Deref;
 
 use vulkayes_core::{
-	ash::{self, vk},
 	instance::Instance,
 	surface::{error::SurfaceError, Surface},
 	Vrc
@@ -54,52 +53,29 @@ pub fn create_surface(
 	window: &Window,
 	host_memory_allocator: vulkayes_core::memory::host::HostMemoryAllocator
 ) -> Result<Surface, SurfaceError> {
-	use cocoa::appkit::{NSView, NSWindow};
 	use winit::platform::macos::WindowExtMacOS;
 
-	unsafe {
-		let handle: cocoa::base::id = std::mem::transmute(window.ns_window());
-		let view = handle.contentView();
-
-		let layer = metal::CoreAnimationLayer::new();
-		layer.set_edge_antialiasing_mask(0);
-		layer.set_presents_with_transaction(false);
-		layer.remove_all_animations();
-		layer.set_contents_scale(view.backingScaleFactor());
-
-		view.setLayer(std::mem::transmute(layer.as_ref()));
-		view.setWantsLayer(objc::runtime::YES);
-	}
-
-	let create_info = vk::MacOSSurfaceCreateInfoMVK {
-		s_type: vk::StructureType::MACOS_SURFACE_CREATE_INFO_M,
-		p_next: std::ptr::null(),
-		flags: Default::default(),
-		p_view: window.ns_view() as *const c_void
+	let surface = unsafe {
+		crate::raw_surface(
+			std::mem::transmute(window.ns_window()),
+			std::mem::transmute(window.ns_view()),
+			instance.entry().deref(),
+			instance.deref().deref(),
+			host_memory_allocator.as_ref()
+		)?
 	};
 
-	let macos_surface_loader =
-		ash::extensions::mvk::MacOSSurface::new(instance.entry().deref(), instance.deref().deref());
-
-	let allocation_callbacks: Option<vk::AllocationCallbacks> = host_memory_allocator.into();
-
-	unsafe {
-		let surface = macos_surface_loader
-			.create_mac_os_surface_mvk(&create_info, allocation_callbacks.as_ref())?;
-
-		Ok(vulkayes_core::surface::Surface::from_existing(
+	let vy_surface = unsafe {
+		vulkayes_core::surface::Surface::from_existing(
 			instance,
 			surface,
 			host_memory_allocator
-		))
-	}
-}
-#[cfg(target_os = "macos")]
-pub fn required_surface_extensions() -> impl AsRef<[&'static str]> {
-	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
-		ash::extensions::mvk::MacOSSurface::name().to_str().unwrap()
-	]
+		)
+	};
+
+	Ok(
+		vy_surface
+	)
 }
 
 #[cfg(target_os = "windows")]
