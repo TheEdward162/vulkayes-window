@@ -1,195 +1,147 @@
+use std::ops::Deref;
+
+use ash::vk;
+use vulkayes_core::{
+	ash,
+	prelude::{Instance, Surface, Vrc},
+	surface::error::SurfaceError
+};
+
+use raw_window_handle::HasRawWindowHandle;
+
 pub use winit;
+use winit::window::Window;
 
-pub use inner::*;
-
-#[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
-mod inner {
-	use std::ops::Deref;
-
-	use winit::window::Window;
-
-	use vulkayes_core::{
-		instance::Instance,
-		surface::{error::SurfaceError, Surface},
-		Vrc
+pub fn create_surface(
+	instance: Vrc<Instance>,
+	window: &Window,
+	host_memory_allocator: vulkayes_core::memory::host::HostMemoryAllocator
+) -> Result<Surface, SurfaceError> {
+	let surface = unsafe {
+		create_surface_raw(
+			window,
+			instance.entry().deref(),
+			instance.deref().deref(),
+			host_memory_allocator.as_ref()
+		)?
 	};
 
-	pub fn create_surface(
-		instance: Vrc<Instance>,
-		window: &Window,
-		host_memory_allocator: vulkayes_core::memory::host::HostMemoryAllocator
-	) -> Result<Surface, SurfaceError> {
-		create_surface_ext(instance, window, host_memory_allocator, crate::UNIX_USE_XCB_DEFAULT)
-	}
-	pub fn required_surface_extensions(window: &Window) -> impl AsRef<[&'static str]> {
-		required_surface_extensions_ext(window, crate::UNIX_USE_XCB_DEFAULT)
+	let vy_surface = unsafe {
+		vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
+	};
+
+	return Ok(vy_surface)
+}
+
+/// ### Safety
+///
+/// `instance` must be a valid Vulkan instance.
+pub unsafe fn create_surface_raw(
+	window: &Window,
+	entry: &ash::Entry,
+	instance: &ash::Instance,
+	allocation_callbacks: Option<&vk::AllocationCallbacks>
+) -> Result<ash::vk::SurfaceKHR, ash::vk::Result> {
+	crate::raw_window_handle::create_surface_raw(
+		resolve_window_handle(window),
+		entry,
+		instance,
+		allocation_callbacks
+	)
+}
+
+pub fn required_extensions(window: &Window) -> [&'static str; 2] {
+	crate::raw_window_handle::required_extensions(resolve_window_handle(window))
+}
+
+
+fn resolve_window_handle(window: &Window) -> raw_window_handle::RawWindowHandle {
+	#[cfg(any(
+		target_os = "linux",
+		target_os = "dragonfly",
+		target_os = "freebsd",
+		target_os = "netbsd",
+		target_os = "openbsd"
+	))]
+	{
+		return ext::resolve_window_handle_ext(window, crate::UNIX_USE_XCB_DEFAULT)
 	}
 
-	pub fn create_surface_ext(
+	window.raw_window_handle()
+}
+
+
+#[cfg(any(
+	target_os = "linux",
+	target_os = "dragonfly",
+	target_os = "freebsd",
+	target_os = "netbsd",
+	target_os = "openbsd"
+))]
+pub mod unix {
+	use super::*;
+
+	/// `use_xcb` controls whether to use Xcb over Xlib (doesn't affect Wayland).
+	pub fn create_surface(
 		instance: Vrc<Instance>,
 		window: &Window,
 		host_memory_allocator: vulkayes_core::memory::host::HostMemoryAllocator,
 		use_xcb: bool
 	) -> Result<Surface, SurfaceError> {
-		use winit::platform::unix::WindowExtUnix;
+		let surface = unsafe {
+			create_surface_raw(
+				window,
+				instance.entry().deref(),
+				instance.deref().deref(),
+				host_memory_allocator.as_ref(),
+				use_xcb
+			)?
+		};
 
-		if let (Some(wayland_display), Some(wayland_surface)) = (window.wayland_display(), window.wayland_surface()) {
-			let surface = unsafe {
-				crate::raw_surface_wayland(
-					wayland_display,
-					wayland_surface,
-					instance.entry().deref(),
-					instance.deref().deref(),
-					host_memory_allocator.as_ref()
-				)? 
-			};
+		let vy_surface = unsafe {
+			vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
+		};
 
-			let vy_surface = unsafe {
-				vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
-			};
-
-			return Ok(vy_surface)
-		}
-
-
-		if let Some(x11_window) = window.xlib_window() {
-			let surface = if use_xcb {
-				 unsafe {
-					crate::raw_surface_xcb(
-						window.xcb_connection().unwrap(),
-						x11_window as _,
-						instance.entry().deref(),
-						instance.deref().deref(),
-						host_memory_allocator.as_ref()
-					)? 
-				}
-			} else {
-				unsafe {
-					crate::raw_surface_xlib(
-						x11_window,
-						window.xlib_display().unwrap() as *mut _,
-						instance.entry().deref(),
-						instance.deref().deref(),
-						host_memory_allocator.as_ref()
-					)? 
-				}
-			};
-
-			let vy_surface = unsafe {
-				vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
-			};
-
-			return Ok(vy_surface)
-		}
-
-		unimplemented!("Only implemented for Wayland, Xlib and Xcb")
+		return Ok(vy_surface)
 	}
-	pub fn required_surface_extensions_ext(window: &Window, use_xcb: bool) -> impl AsRef<[&'static str]> {
-		use winit::platform::unix::WindowExtUnix;
-		
-		if let (Some(_), Some(_)) = (window.wayland_display(), window.wayland_surface()) {
-			return crate::required_surface_extensions_wayland();
-		}
 
-		if let Some(_) = window.xlib_window() {
-			if use_xcb {
-				return crate::required_surface_extensions_xcb();
-			} else {
-				return crate::required_surface_extensions_xlib();
+	/// ### Safety
+	///
+	/// `instance` must be a valid Vulkan instance.
+	///
+	/// `use_xcb` controls whether to use Xcb over Xlib (doesn't affect Wayland).
+	pub unsafe fn create_surface_raw(
+		window: &Window,
+		entry: &ash::Entry,
+		instance: &ash::Instance,
+		allocation_callbacks: Option<&vk::AllocationCallbacks>,
+		use_xcb: bool
+	) -> Result<ash::vk::SurfaceKHR, ash::vk::Result> {
+		crate::raw_window_handle::create_surface_raw(
+			resolve_window_handle(window, use_xcb),
+			entry,
+			instance,
+			allocation_callbacks
+		)
+	}
+
+	/// `use_xcb` controls whether to use Xcb over Xlib (doesn't affect Wayland).
+	pub fn required_extensions(window: &Window, use_xcb: bool) -> [&'static str; 2] {
+		crate::raw_window_handle::required_extensions(resolve_window_handle(window, use_xcb))
+	}
+
+	fn resolve_window_handle(window: &Window, use_xcb: bool) -> raw_window_handle::RawWindowHandle {
+		use winit::platform::unix::WindowExtUnix;
+		if use_xcb {
+			if let raw_window_handle::RawWindowHandle::Xlib(_) = window.raw_window_handle() {
+				return raw_window_handle::RawWindowHandle::Xcb(raw_window_handle::unix::XcbHandle {
+					window: window.xlib_window().unwrap() as _,
+					connection: window.xcb_connection().unwrap(),
+					..raw_window_handle::unix::XcbHandle::empty()
+				})
 			}
 		}
 
-		unimplemented!("Only implemented for Wayland, Xlib and Xcb")
-	}
-}
-
-#[cfg(target_os = "macos")]
-mod inner {
-	use std::ops::Deref;
-
-	use winit::window::Window;
-
-	use vulkayes_core::{
-		instance::Instance,
-		surface::{error::SurfaceError, Surface},
-		Vrc
-	};
-
-	pub fn create_surface(
-		instance: Vrc<Instance>,
-		window: &Window,
-		host_memory_allocator: vulkayes_core::memory::host::HostMemoryAllocator
-	) -> Result<Surface, SurfaceError> {
-		use winit::platform::macos::WindowExtMacOS;
-
-		let surface = unsafe {
-			crate::raw_surface_cocoa(
-				std::mem::transmute(window.ns_window()),
-				std::mem::transmute(window.ns_view()),
-				instance.entry().deref(),
-				instance.deref().deref(),
-				host_memory_allocator.as_ref()
-			)?
-		};
-
-		let vy_surface = unsafe {
-			vulkayes_core::surface::Surface::from_existing(
-				instance,
-				surface,
-				host_memory_allocator
-			)
-		};
-
-		Ok(
-			vy_surface
-		)
-	}
-	pub fn required_surface_extensions(window: &Window) -> [&'static str; 2] {
-		crate::required_surface_extensions()
-	}
-}
-
-#[cfg(target_os = "windows")]
-mod inner {
-	use winit::window::Window;
-
-	use vulkayes_core::{
-		instance::Instance,
-		surface::{error::SurfaceError, Surface},
-		Vrc
-	};
-
-	unsafe fn create_surface(
-		instance: Vrc<Instance>,
-		window: &Window,
-		host_memory_allocator: vulkayes_core::memory::host::HostMemoryAllocator
-	) -> Result<Surface, SurfaceError> {
-		use winapi::{shared::windef::HWND, um::libloaderapi::GetModuleHandleW};
-		use winit::os::windows::WindowExt;
-
-		let hinstance = GetModuleHandleW(std::ptr::null()) as *const c_void;
-		let hwnd = window.get_hwnd() as HWND;
-
-		let surface = unsafe {
-			crate::raw_surface_win32(
-				hinstance,
-				hwnd,
-				instance.entry().deref(),
-				instance.deref().deref(),
-				host_memory_allocator.as_ref()
-			)?
-		};
-
-		let vy_surface = unsafe {
-			vulkayes_core::surface::Surface::from_existing(
-				instance,
-				surface,
-				host_memory_allocator
-			)
-		};
-
-		Ok(
-			vy_surface
-		)
+		window.raw_window_handle()
 	}
 }

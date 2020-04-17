@@ -7,18 +7,22 @@ edition = "2018"
 [features]
 default = ["winit_window"]
 
-unix_use_xcb_default = []
+raw_window_handle = ["raw-window-handle"]
 
-winit_window = ["winit", "winapi"]
+winit_window = ["winit", "raw_window_handle"]
+minifb_window = ["minifb", "raw_window_handle"]
+
+unix_use_xcb_default = []
 
 [dependencies]
 vulkayes-core = { path = "../vulkayes-core" }
 
+raw-window-handle = { version = "0.3", optional = true }
+
 winit = { version = "0.22", optional = true }
+minifb = { version = "0.16", optional = true }
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["windef", "winuser"], optional = true }
 
-[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 metal = { version = "0.18" }
 cocoa = { version = "0.20" }
