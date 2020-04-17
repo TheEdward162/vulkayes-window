@@ -55,6 +55,7 @@ pub fn required_extensions(window: &Window) -> [&'static str; 2] {
 }
 
 
+#[allow(unreachable_code)]
 fn resolve_window_handle(window: &Window) -> raw_window_handle::RawWindowHandle {
 	#[cfg(any(
 		target_os = "linux",
@@ -64,7 +65,7 @@ fn resolve_window_handle(window: &Window) -> raw_window_handle::RawWindowHandle 
 		target_os = "openbsd"
 	))]
 	{
-		return ext::resolve_window_handle_ext(window, crate::UNIX_USE_XCB_DEFAULT)
+		return unix::resolve_window_handle(window, crate::UNIX_USE_XCB_DEFAULT)
 	}
 
 	window.raw_window_handle()
@@ -130,7 +131,7 @@ pub mod unix {
 		crate::raw_window_handle::required_extensions(resolve_window_handle(window, use_xcb))
 	}
 
-	fn resolve_window_handle(window: &Window, use_xcb: bool) -> raw_window_handle::RawWindowHandle {
+	pub(super) fn resolve_window_handle(window: &Window, use_xcb: bool) -> raw_window_handle::RawWindowHandle {
 		use winit::platform::unix::WindowExtUnix;
 		if use_xcb {
 			if let raw_window_handle::RawWindowHandle::Xlib(_) = window.raw_window_handle() {

@@ -59,7 +59,7 @@ pub unsafe fn create_surface_raw(
 		))]
 		RawWindowHandle::Xlib(handle) => crate::from_raw_xlib(
 			handle.window,
-			handle.dislay,
+			handle.display as *mut _,
 			entry,
 			instance,
 			allocation_callbacks
