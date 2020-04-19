@@ -18,8 +18,8 @@ pub mod minifb;
 
 /// ### Safety
 ///
-/// * `window_handle` must be a valid NSWindow handle.
-/// * `view_handle` must be a valid NSView handle.
+/// * `ns_window` must be a valid NSWindow handle.
+/// * `ns_view` must be a valid NSView handle.
 /// * `instance` must be a valid Vulkan instance.
 ///
 /// Note that while this function can be called on any platform, it will only
@@ -33,7 +33,7 @@ pub unsafe fn from_raw_macos(
 	allocation_callbacks: Option<&vk::AllocationCallbacks>
 ) -> Result<ash::vk::SurfaceKHR, ash::vk::Result> {
 	#[cfg(target_os = "macos")]
-	{
+	let layer = {
 		use cocoa::appkit::{NSView, NSWindow};
 
 		let window_handle: cocoa::base::id = std::mem::transmute(ns_window);
@@ -47,7 +47,12 @@ pub unsafe fn from_raw_macos(
 
 		view.setLayer(std::mem::transmute(layer.as_ref()));
 		view.setWantsLayer(cocoa::base::YES);
-	}
+
+		layer
+	};
+	#[cfg(target_os = "macos")]
+	let ns_view: *const c_void = std::mem::transmute(layer.as_ref());
+
 	#[cfg(not(target_os = "macos"))]
 	{
 		vulkayes_core::log::error!("Cannot initialize CAMetalLayer on this platform");
