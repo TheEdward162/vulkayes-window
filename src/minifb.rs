@@ -1,6 +1,7 @@
-use std::ops::Deref;
+use std::{ffi::CStr, ops::Deref};
 
 use ash::vk;
+
 use vulkayes_core::{
 	ash,
 	prelude::{Instance, Surface, Vrc},
@@ -50,6 +51,6 @@ pub unsafe fn create_surface_raw(
 	)
 }
 
-pub fn required_extensions(window: &Window) -> [&'static str; 2] {
+pub fn required_extensions(window: &Window) -> [&'static CStr; 2] {
 	crate::raw_window_handle::required_extensions(window.raw_window_handle())
 }

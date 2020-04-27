@@ -1,6 +1,7 @@
-use std::ops::Deref;
+use std::{ffi::CStr, ops::Deref};
 
 use ash::vk;
+
 use vulkayes_core::{
 	ash,
 	prelude::{Instance, Surface, Vrc},
@@ -125,7 +126,7 @@ pub unsafe fn create_surface_raw(
 		_ => unimplemented!("Not implemented for this platform")
 	}
 }
-pub fn required_extensions(handle: RawWindowHandle) -> [&'static str; 2] {
+pub fn required_extensions(handle: RawWindowHandle) -> [&'static CStr; 2] {
 	match handle {
 		#[cfg(target_os = "macos")]
 		RawWindowHandle::MacOS(_) => crate::required_extensions_macos(),

@@ -1,6 +1,7 @@
-use std::ops::Deref;
+use std::{ffi::CStr, ops::Deref};
 
 use ash::vk;
+
 use vulkayes_core::{
 	ash,
 	prelude::{Instance, Surface, Vrc},
@@ -50,7 +51,7 @@ pub unsafe fn create_surface_raw(
 	)
 }
 
-pub fn required_extensions(window: &Window) -> [&'static str; 2] {
+pub fn required_extensions(window: &Window) -> [&'static CStr; 2] {
 	crate::raw_window_handle::required_extensions(resolve_window_handle(window))
 }
 
@@ -127,11 +128,14 @@ pub mod unix {
 	}
 
 	/// `use_xcb` controls whether to use Xcb over Xlib (doesn't affect Wayland).
-	pub fn required_extensions(window: &Window, use_xcb: bool) -> [&'static str; 2] {
+	pub fn required_extensions(window: &Window, use_xcb: bool) -> [&'static CStr; 2] {
 		crate::raw_window_handle::required_extensions(resolve_window_handle(window, use_xcb))
 	}
 
-	pub(super) fn resolve_window_handle(window: &Window, use_xcb: bool) -> raw_window_handle::RawWindowHandle {
+	pub(super) fn resolve_window_handle(
+		window: &Window,
+		use_xcb: bool
+	) -> raw_window_handle::RawWindowHandle {
 		use winit::platform::unix::WindowExtUnix;
 		if use_xcb {
 			if let raw_window_handle::RawWindowHandle::Xlib(_) = window.raw_window_handle() {

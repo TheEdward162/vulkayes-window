@@ -1,7 +1,10 @@
-//! Provides platform specific glue between windows and Vulkan.
+//! Provides platform
+//! specific glue between windows and Vulkan.
+
+use std::ffi::{c_void, CStr};
 
 use ash::vk;
-use std::ffi::c_void;
+
 use vulkayes_core::ash;
 
 /// Controls whether Xcb is used over Xlib on unix platforms by default.
@@ -67,10 +70,10 @@ pub unsafe fn from_raw_macos(
 
 	Ok(surface)
 }
-pub fn required_extensions_macos() -> [&'static str; 2] {
+pub fn required_extensions_macos() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
-		ash::extensions::mvk::MacOSSurface::name().to_str().unwrap()
+		ash::extensions::khr::Surface::name(),
+		ash::extensions::mvk::MacOSSurface::name()
 	]
 }
 
@@ -97,10 +100,10 @@ pub unsafe fn from_raw_xlib(
 
 	Ok(surface)
 }
-pub fn required_extensions_xlib() -> [&'static str; 2] {
+pub fn required_extensions_xlib() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
-		ash::extensions::khr::XlibSurface::name().to_str().unwrap()
+		ash::extensions::khr::Surface::name(),
+		ash::extensions::khr::XlibSurface::name()
 	]
 }
 
@@ -126,10 +129,10 @@ pub unsafe fn from_raw_xcb(
 
 	Ok(surface)
 }
-pub fn required_extensions_xcb() -> [&'static str; 2] {
+pub fn required_extensions_xcb() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
-		ash::extensions::khr::XcbSurface::name().to_str().unwrap()
+		ash::extensions::khr::Surface::name(),
+		ash::extensions::khr::XcbSurface::name()
 	]
 }
 
@@ -155,12 +158,10 @@ pub unsafe fn from_raw_wayland(
 
 	Ok(surface)
 }
-pub fn required_extensions_wayland() -> [&'static str; 2] {
+pub fn required_extensions_wayland() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
+		ash::extensions::khr::Surface::name(),
 		ash::extensions::khr::WaylandSurface::name()
-			.to_str()
-			.unwrap()
 	]
 }
 
@@ -186,10 +187,10 @@ pub unsafe fn from_raw_win32(
 
 	Ok(surface)
 }
-pub fn required_extensions_win32() -> [&'static str; 2] {
+pub fn required_extensions_win32() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
-		ash::extensions::khr::Win32Surface::name().to_str().unwrap()
+		ash::extensions::khr::Surface::name(),
+		ash::extensions::khr::Win32Surface::name()
 	]
 }
 
@@ -242,10 +243,10 @@ pub unsafe fn from_raw_ios(
 
 	Ok(surface)
 }
-pub fn required_extensions_ios() -> [&'static str; 2] {
+pub fn required_extensions_ios() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
-		ash::extensions::mvk::IOSSurface::name().to_str().unwrap()
+		ash::extensions::khr::Surface::name(),
+		ash::extensions::mvk::IOSSurface::name()
 	]
 }
 
@@ -267,11 +268,9 @@ pub unsafe fn from_raw_android(
 
 	Ok(surface)
 }
-pub fn required_extensions_android() -> [&'static str; 2] {
+pub fn required_extensions_android() -> [&'static CStr; 2] {
 	[
-		ash::extensions::khr::Surface::name().to_str().unwrap(),
+		ash::extensions::khr::Surface::name(),
 		ash::extensions::khr::AndroidSurface::name()
-			.to_str()
-			.unwrap()
 	]
 }
