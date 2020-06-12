@@ -2,6 +2,7 @@
 name = "vulkayes-window"
 version = "0.1.0"
 authors = ["TheEdward162 <TheEdward162@gmail.com>"]
+license = "MIT/Apache-2.0"
 edition = "2018"
 
 [features]
@@ -15,8 +16,8 @@ minifb_window = ["minifb", "raw_window_handle"]
 unix_use_xcb_default = []
 
 [dependencies]
-# vulkayes-core = { path = "../vulkayes-core" }
-vulkayes-core = { git = "https://github.com/vulkayes/vulkayes-core" }
+vulkayes-core = { path = "../vulkayes-core" }
+# vulkayes-core = { git = "https://github.com/vulkayes/vulkayes-core" }
 
 raw-window-handle = { version = "0.3", optional = true }
 
