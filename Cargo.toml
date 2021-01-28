@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["TheEdward162 <TheEdward162@gmail.com>"]
 license = "MIT/Apache-2.0"
 edition = "2018"
+description = "Windowing abstraction for use with vulkayes (vulkayes-core)."
 
 [features]
 default = ["winit_window"]
@@ -16,15 +17,16 @@ minifb_window = ["minifb", "raw_window_handle"]
 unix_use_xcb_default = []
 
 [dependencies]
-vulkayes-core = { path = "../vulkayes-core" }
+# vulkayes-core = { path = "../vulkayes-core" }
 # vulkayes-core = { git = "https://github.com/vulkayes/vulkayes-core" }
+vulkayes-core = "0.1.0"
 
 raw-window-handle = { version = "0.3", optional = true }
 
-winit = { version = "0.22", optional = true }
-minifb = { version = "0.16", optional = true }
+winit = { version = "0.23", optional = true }
+minifb = { version = "0.19", optional = true }
 
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
-metal = { version = "0.18" }
-cocoa = { version = "0.20" }
+metal = { version = "0.20" }
+cocoa = { version = "0.24" }
