@@ -1,15 +1,12 @@
 use std::{ffi::CStr, ops::Deref};
 
 use ash::vk;
-
+use raw_window_handle::HasRawWindowHandle;
 use vulkayes_core::{
 	ash,
 	prelude::{Instance, Surface, Vrc},
 	surface::error::SurfaceError
 };
-
-use raw_window_handle::HasRawWindowHandle;
-
 pub use winit;
 use winit::window::Window;
 
@@ -27,9 +24,7 @@ pub fn create_surface(
 		)?
 	};
 
-	let vy_surface = unsafe {
-		vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
-	};
+	let vy_surface = unsafe { vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator) };
 
 	return Ok(vy_surface)
 }
@@ -58,13 +53,7 @@ pub fn required_extensions(window: &Window) -> [&'static CStr; 2] {
 
 #[allow(unreachable_code)]
 fn resolve_window_handle(window: &Window) -> raw_window_handle::RawWindowHandle {
-	#[cfg(any(
-		target_os = "linux",
-		target_os = "dragonfly",
-		target_os = "freebsd",
-		target_os = "netbsd",
-		target_os = "openbsd"
-	))]
+	#[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))]
 	{
 		return unix::resolve_window_handle(window, crate::UNIX_USE_XCB_DEFAULT)
 	}
@@ -73,13 +62,7 @@ fn resolve_window_handle(window: &Window) -> raw_window_handle::RawWindowHandle 
 }
 
 
-#[cfg(any(
-	target_os = "linux",
-	target_os = "dragonfly",
-	target_os = "freebsd",
-	target_os = "netbsd",
-	target_os = "openbsd"
-))]
+#[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))]
 pub mod unix {
 	use super::*;
 
@@ -100,9 +83,7 @@ pub mod unix {
 			)?
 		};
 
-		let vy_surface = unsafe {
-			vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
-		};
+		let vy_surface = unsafe { vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator) };
 
 		return Ok(vy_surface)
 	}
@@ -132,10 +113,7 @@ pub mod unix {
 		crate::raw_window_handle::required_extensions(resolve_window_handle(window, use_xcb))
 	}
 
-	pub(super) fn resolve_window_handle(
-		window: &Window,
-		use_xcb: bool
-	) -> raw_window_handle::RawWindowHandle {
+	pub(super) fn resolve_window_handle(window: &Window, use_xcb: bool) -> raw_window_handle::RawWindowHandle {
 		use winit::platform::unix::WindowExtUnix;
 		if use_xcb {
 			if let raw_window_handle::RawWindowHandle::Xlib(_) = window.raw_window_handle() {

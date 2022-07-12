@@ -4,7 +4,6 @@
 use std::ffi::{c_void, CStr};
 
 use ash::vk;
-
 use vulkayes_core::ash;
 
 /// Controls whether Xcb is used over Xlib on unix platforms by default.
@@ -37,44 +36,35 @@ pub unsafe fn from_raw_macos(
 ) -> Result<ash::vk::SurfaceKHR, ash::vk::Result> {
 	#[cfg(target_os = "macos")]
 	let layer = {
-		use cocoa::appkit::{NSView, NSWindow};
+		use raw_window_metal::{appkit, Layer};
 
-		let window_handle: cocoa::base::id = std::mem::transmute(ns_window);
-		let view = window_handle.contentView();
+		let layer =
+			if !ns_view.is_null() { appkit::metal_layer_from_ns_view(ns_view as *mut _) } else { appkit::metal_layer_from_ns_window(ns_window) };
 
-		let layer = metal::CoreAnimationLayer::new();
-		layer.set_edge_antialiasing_mask(0);
-		layer.set_presents_with_transaction(false);
-		layer.remove_all_animations();
-		layer.set_contents_scale(view.backingScaleFactor());
-
-		view.setLayer(std::mem::transmute(layer.as_ref()));
-		view.setWantsLayer(cocoa::base::YES);
-
-		layer
+		match layer {
+			Layer::Existing(layer) | Layer::Allocated(layer) => layer,
+			Layer::None => {
+				vulkayes_core::log::error!("Cannot initialize MetalLayer");
+				std::ptr::null_mut()
+			}
+		}
 	};
-	#[cfg(target_os = "macos")]
-	let ns_view: *const c_void = std::mem::transmute(layer.as_ref());
-
 	#[cfg(not(target_os = "macos"))]
-	{
-		vulkayes_core::log::error!("Cannot initialize CAMetalLayer on this platform");
-	}
+	let layer = {
+		vulkayes_core::log::error!("Cannot initialize MetalLayer on this platform");
+		std::ptr::null_mut()
+	};
 
-	let mut create_info = vk::MacOSSurfaceCreateInfoMVK::builder();
-	create_info.p_view = ns_view;
+	let create_info = vk::MetalSurfaceCreateInfoEXT::builder().layer(&*(layer as *const _));
 
 	vulkayes_core::log::info!("Creating macOS surface");
-	let loader = ash::extensions::mvk::MacOSSurface::new(entry, instance);
-	let surface = loader.create_mac_os_surface_mvk(&create_info, allocation_callbacks)?;
+	let loader = ash::extensions::ext::MetalSurface::new(entry, instance);
+	let surface = loader.create_metal_surface(&create_info, allocation_callbacks)?;
 
 	Ok(surface)
 }
 pub fn required_extensions_macos() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::mvk::MacOSSurface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::ext::MetalSurface::name()]
 }
 
 
@@ -101,10 +91,7 @@ pub unsafe fn from_raw_xlib(
 	Ok(surface)
 }
 pub fn required_extensions_xlib() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::khr::XlibSurface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::khr::XlibSurface::name()]
 }
 
 /// ### Safety
@@ -130,10 +117,7 @@ pub unsafe fn from_raw_xcb(
 	Ok(surface)
 }
 pub fn required_extensions_xcb() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::khr::XcbSurface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::khr::XcbSurface::name()]
 }
 
 /// ### Safety
@@ -159,10 +143,7 @@ pub unsafe fn from_raw_wayland(
 	Ok(surface)
 }
 pub fn required_extensions_wayland() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::khr::WaylandSurface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::khr::WaylandSurface::name()]
 }
 
 /// ### Safety
@@ -188,10 +169,7 @@ pub unsafe fn from_raw_win32(
 	Ok(surface)
 }
 pub fn required_extensions_win32() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::khr::Win32Surface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::khr::Win32Surface::name()]
 }
 
 /// ### Safety
@@ -211,43 +189,36 @@ pub unsafe fn from_raw_ios(
 	allocation_callbacks: Option<&vk::AllocationCallbacks>
 ) -> Result<ash::vk::SurfaceKHR, ash::vk::Result> {
 	#[cfg(target_os = "ios")]
-	{
-		// 	use cocoa::appkit::{NSView, NSWindow};
-		//
-		// 	let window_handle: cocoa::base::id = std::mem::transmute(window_handle);
-		// 	let view = window_handle.contentView();
-		//
-		let layer = metal::CoreAnimationLayer::new();
-		layer.set_edge_antialiasing_mask(0);
-		layer.set_presents_with_transaction(false);
-		layer.remove_all_animations();
-		// layer.set_contents_scale(view.backingScaleFactor());
+	let layer = {
+		use raw_window_metal::{uikit, Layer};
 
-		unimplemented!("Missing initialization for CAMetalLayer")
-		// 	view.setLayer(
-		// 		std::mem::transmute(layer.as_ref())
-		// 	);
-		// 	view.setWantsLayer(cocoa::base::YES);
-	}
+		let layer =
+			if !ui_view.is_null() { uikit::metal_layer_from_ui_view(ui_view as *mut _) } else { uikit::metal_layer_from_ui_window(ui_window) };
+
+		match layer {
+			Layer::Existing(layer) | Layer::Allocated(layer) => layer,
+			Layer::None => {
+				vulkayes_core::log::error!("Cannot initialize MetalLayer");
+				std::ptr::null_mut()
+			}
+		}
+	};
 	#[cfg(not(target_os = "ios"))]
-	{
-		vulkayes_core::log::error!("Cannot initialize CAMetalLayer on this platform");
-	}
+	let layer = {
+		vulkayes_core::log::error!("Cannot initialize MetalLayer on this platform");
+		std::ptr::null_mut()
+	};
 
-	let mut create_info = vk::IOSSurfaceCreateInfoMVK::builder();
-	create_info.p_view = ui_view;
+	let create_info = vk::MetalSurfaceCreateInfoEXT::builder().layer(&*(layer as *const _));
 
-	vulkayes_core::log::info!("Creating iOS surface");
-	let loader = ash::extensions::mvk::IOSSurface::new(entry, instance);
-	let surface = loader.create_ios_surface_mvk(&create_info, allocation_callbacks)?;
+	vulkayes_core::log::info!("Creating macOS surface");
+	let loader = ash::extensions::ext::MetalSurface::new(entry, instance);
+	let surface = loader.create_metal_surface(&create_info, allocation_callbacks)?;
 
 	Ok(surface)
 }
 pub fn required_extensions_ios() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::mvk::IOSSurface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::ext::MetalSurface::name()]
 }
 
 /// ### Safety
@@ -269,8 +240,5 @@ pub unsafe fn from_raw_android(
 	Ok(surface)
 }
 pub fn required_extensions_android() -> [&'static CStr; 2] {
-	[
-		ash::extensions::khr::Surface::name(),
-		ash::extensions::khr::AndroidSurface::name()
-	]
+	[ash::extensions::khr::Surface::name(), ash::extensions::khr::AndroidSurface::name()]
 }

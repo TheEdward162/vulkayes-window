@@ -18,15 +18,13 @@ unix_use_xcb_default = []
 
 [dependencies]
 # vulkayes-core = { path = "../vulkayes-core" }
-# vulkayes-core = { git = "https://github.com/vulkayes/vulkayes-core" }
-vulkayes-core = "0.1.0"
+vulkayes-core = { git = "https://github.com/vulkayes/vulkayes-core" }
+# vulkayes-core = "0.1.0"
 
-raw-window-handle = { version = "0.3", optional = true }
+raw-window-handle = { version = "0.4", optional = true }
 
-winit = { version = "0.23", optional = true }
-minifb = { version = "0.19", optional = true }
-
+winit = { version = "0.26", optional = true }
+minifb = { version = "0.23", optional = true }
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
-metal = { version = "0.20" }
-cocoa = { version = "0.24" }
+raw-window-metal = { version = "0.2" }

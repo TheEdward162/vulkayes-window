@@ -1,15 +1,13 @@
 use std::{ffi::CStr, ops::Deref};
 
 use ash::vk;
-
+pub use raw_window_handle;
+use raw_window_handle::RawWindowHandle;
 use vulkayes_core::{
 	ash,
 	prelude::{Instance, Surface, Vrc},
 	surface::error::SurfaceError
 };
-
-pub use raw_window_handle;
-use raw_window_handle::RawWindowHandle;
 
 /// ### Safety
 ///
@@ -26,8 +24,7 @@ pub unsafe fn create_surface(
 		host_memory_allocator.as_ref()
 	)?;
 
-	let vy_surface =
-		vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator);
+	let vy_surface = vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator);
 
 	return Ok(vy_surface)
 }
@@ -42,8 +39,8 @@ pub unsafe fn create_surface_raw(
 	allocation_callbacks: Option<&vk::AllocationCallbacks>
 ) -> Result<ash::vk::SurfaceKHR, ash::vk::Result> {
 	match handle {
-		#[cfg(target_os = "macos")]
-		RawWindowHandle::MacOS(handle) => crate::from_raw_macos(
+		// #[cfg(target_os = "macos")]
+		RawWindowHandle::AppKit(handle) => crate::from_raw_macos(
 			handle.ns_window,
 			handle.ns_view,
 			entry,
@@ -51,13 +48,13 @@ pub unsafe fn create_surface_raw(
 			allocation_callbacks
 		),
 
-		#[cfg(any(
-			target_os = "linux",
-			target_os = "dragonfly",
-			target_os = "freebsd",
-			target_os = "netbsd",
-			target_os = "openbsd"
-		))]
+		// #[cfg(any(
+		// 	target_os = "linux",
+		// 	target_os = "dragonfly",
+		// 	target_os = "freebsd",
+		// 	target_os = "netbsd",
+		// 	target_os = "openbsd"
+		// ))]
 		RawWindowHandle::Xlib(handle) => crate::from_raw_xlib(
 			handle.window,
 			handle.display as *mut _,
@@ -65,13 +62,13 @@ pub unsafe fn create_surface_raw(
 			instance,
 			allocation_callbacks
 		),
-		#[cfg(any(
-			target_os = "linux",
-			target_os = "dragonfly",
-			target_os = "freebsd",
-			target_os = "netbsd",
-			target_os = "openbsd"
-		))]
+		// #[cfg(any(
+		// 	target_os = "linux",
+		// 	target_os = "dragonfly",
+		// 	target_os = "freebsd",
+		// 	target_os = "netbsd",
+		// 	target_os = "openbsd"
+		// ))]
 		RawWindowHandle::Xcb(handle) => crate::from_raw_xcb(
 			handle.window,
 			handle.connection,
@@ -79,13 +76,13 @@ pub unsafe fn create_surface_raw(
 			instance,
 			allocation_callbacks
 		),
-		#[cfg(any(
-			target_os = "linux",
-			target_os = "dragonfly",
-			target_os = "freebsd",
-			target_os = "netbsd",
-			target_os = "openbsd"
-		))]
+		// #[cfg(any(
+		// 	target_os = "linux",
+		// 	target_os = "dragonfly",
+		// 	target_os = "freebsd",
+		// 	target_os = "netbsd",
+		// 	target_os = "openbsd"
+		// ))]
 		RawWindowHandle::Wayland(handle) => crate::from_raw_wayland(
 			handle.surface,
 			handle.display,
@@ -94,8 +91,8 @@ pub unsafe fn create_surface_raw(
 			allocation_callbacks
 		),
 
-		#[cfg(target_os = "windows")]
-		RawWindowHandle::Windows(handle) => crate::from_raw_win32(
+		// #[cfg(target_os = "windows")]
+		RawWindowHandle::Win32(handle) => crate::from_raw_win32(
 			handle.hwnd,
 			handle.hinstance,
 			entry,
@@ -103,16 +100,16 @@ pub unsafe fn create_surface_raw(
 			allocation_callbacks
 		),
 
-		#[cfg(target_os = "ios")]
-		RawWindowHandle::IOS(handle) => crate::from_raw_ios(
+		// #[cfg(target_os = "ios")]
+		RawWindowHandle::UiKit(handle) => crate::from_raw_ios(
 			handle.ui_window,
 			handle.ui_view,
 			entry,
 			instance,
 			allocation_callbacks
 		),
-		#[cfg(target_os = "android")]
-		RawWindowHandle::Android(handle) => crate::from_raw_android(
+		// #[cfg(target_os = "android")]
+		RawWindowHandle::AndroidNdk(handle) => crate::from_raw_android(
 			handle.a_native_window,
 			entry,
 			instance,
@@ -120,7 +117,7 @@ pub unsafe fn create_surface_raw(
 		),
 
 		// TODO: Can this be done currently?
-		#[cfg(target_arch = "wasm32")]
+		// #[cfg(target_arch = "wasm32")]
 		RawWindowHandle::Web(_) => unimplemented!("Not implemented for this platform"),
 
 		_ => unimplemented!("Not implemented for this platform")
@@ -129,31 +126,13 @@ pub unsafe fn create_surface_raw(
 pub fn required_extensions(handle: RawWindowHandle) -> [&'static CStr; 2] {
 	match handle {
 		#[cfg(target_os = "macos")]
-		RawWindowHandle::MacOS(_) => crate::required_extensions_macos(),
+		RawWindowHandle::AppKit(_) => crate::required_extensions_macos(),
 
-		#[cfg(any(
-			target_os = "linux",
-			target_os = "dragonfly",
-			target_os = "freebsd",
-			target_os = "netbsd",
-			target_os = "openbsd"
-		))]
+		#[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))]
 		RawWindowHandle::Xlib(_) => crate::required_extensions_xlib(),
-		#[cfg(any(
-			target_os = "linux",
-			target_os = "dragonfly",
-			target_os = "freebsd",
-			target_os = "netbsd",
-			target_os = "openbsd"
-		))]
+		#[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))]
 		RawWindowHandle::Xcb(_) => crate::required_extensions_xcb(),
-		#[cfg(any(
-			target_os = "linux",
-			target_os = "dragonfly",
-			target_os = "freebsd",
-			target_os = "netbsd",
-			target_os = "openbsd"
-		))]
+		#[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))]
 		RawWindowHandle::Wayland(_) => crate::required_extensions_wayland(),
 
 		#[cfg(target_os = "windows")]

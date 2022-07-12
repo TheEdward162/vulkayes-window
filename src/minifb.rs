@@ -1,17 +1,14 @@
 use std::{ffi::CStr, ops::Deref};
 
 use ash::vk;
-
+pub use minifb;
+use minifb::Window;
+use raw_window_handle::HasRawWindowHandle;
 use vulkayes_core::{
 	ash,
 	prelude::{Instance, Surface, Vrc},
 	surface::error::SurfaceError
 };
-
-use raw_window_handle::HasRawWindowHandle;
-
-pub use minifb;
-use minifb::Window;
 
 pub fn create_surface(
 	instance: Vrc<Instance>,
@@ -27,9 +24,7 @@ pub fn create_surface(
 		)?
 	};
 
-	let vy_surface = unsafe {
-		vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator)
-	};
+	let vy_surface = unsafe { vulkayes_core::surface::Surface::from_existing(instance, surface, host_memory_allocator) };
 
 	return Ok(vy_surface)
 }
